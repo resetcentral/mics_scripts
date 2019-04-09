@@ -1,0 +1,4 @@
+#!/bin/sh
+#MAKE SURE YOU SED 'PASSWORDHERE' with the password you want to use
+sudo -u postgres psql -c "CREATE USER webapps WITH PASSWORD 'sorryteam';"
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'sorryteam';"

@@ -1,0 +1,131 @@
+fixsudoers()
+{
+    #usage: fixsudoers root dsu
+    chattr -i /etc/sudoers
+    sed -isudoers.bak '/^.*ALL/d' /etc/sudoers
+    sed -isudoers.bak '/^#includedir/d' /etc/sudoers
+    for var in "$@"
+    do
+        echo "$var    ALL=(ALL) ALL" >> /etc/sudoers
+    done
+    chattr +i /etc/sudoers
+}
+
+printpersistence()
+{
+    #usage: printpersistence
+    files="$(ls /var/spool/cron/crontabs/*)  $(ls /etc/cron.d/*) /etc/rc.local"
+    for var in $files
+    do
+        grep -v -E '^#|SHELL|PATH' $var 2>/dev/null
+    done
+    #service cron stop || service crond stop || systemctl stop cron || systemctl stop crond
+}
+
+createuser()
+{
+    #usage: createuser dsu Password1!
+    chattr -i /etc/passwd
+    chattr -i /etc/shadow
+    useradd $1 -m
+    chattr +i /etc/passwd
+    chattr +i /etc/shadow
+}
+
+fixsshd()
+{
+    chattr -i /etc/ssh/sshd_config
+    sed -isshd.bak '/^PubkeyAuthentication/d' /etc/ssh/sshd_config
+    echo "PubkeyAuthentication no" >> /etc/ssh/sshd_config
+    /etc/init.d/ssh restart
+    chattr +i /etc/ssh/sshd_config
+}
+
+changepass()
+{
+    #usage: changepass Password1!
+    chattr -i /etc/passwd
+    chattr -i /etc/shadow
+    users=$(getent passwd | grep /bin/.*sh | grep -v root | cut -d ":" -f 1)
+    for user in $users; do
+        echo $user:$1 | chpasswd
+    done
+    chattr +i /etc/passwd
+    chattr +i /etc/shadow
+}
+
+changerootpass(){
+    #usage changerootpass Password1!
+    #chattr -R -i /etc/ 2>/dev/null
+    chattr -i /etc/passwd
+    chattr -i /etc/shadow
+    echo root:$1 | chpasswd
+    chattr +i /etc/passwd
+    chattr +i /etc/shadow
+}
+
+showlisten(){
+    lsof -iTCP -sTCP:LISTEN -P -n | grep -v 127.0.0.1
+}
+
+fixprofile() {
+    #chattr -R -i /root/
+    cp /etc/skel/.profile /root/.profile
+    cp /etc/skel/.bash_profile /root/.bash_profile
+    cp /etc/skel/.bashrc /root/.bashrc
+    cp /usr/share/base-files/dot.bashrc /root/.bashrc
+    cp /usr/share/base-files/dot.profile /root/.profile
+    cp /usr/share/base-files/dot.bash_profile /root/.bash_profile
+    #chattr +i /root/.profile
+    #chattr +i /root/.bash_profile
+    #chattr +i /root/.bashrc
+
+    #chattr -i /etc/profile
+    cp /usr/share/base-files/profile /etc/profile
+    #chattr +i /etc/profile
+
+    #chattr -R -i /home/
+    homedirs=$(ls /home/)
+    for homedir in $homedirs; do
+        homedir=/home/$homedir
+        cp /etc/skel/.profile $homedir/.profile
+        cp /etc/skel/.bash_profile $homedir/.bash_profile
+        cp /etc/skel/.bashrc $homedir/.bashrc
+
+        cp /usr/share/base-files/dot.bashrc $homedir/.bashrc
+        cp /usr/share/base-files/dot.profile $homedir/.profile
+        cp /usr/share/base-files/dot.bash_profile $homedir/.bash_profile
+
+    #    chattr +i $homedir/.bashrc
+    #    chattr +i $homedir/.profile
+    #    chattr +i $homedir/.bash_profile
+    done
+
+    source ~/.profile
+}
+
+killconn() {
+    for pid in $(lsof -nPi | grep ':22\->' | awk '{print $2}'); do
+        kill -9 $pid
+    done
+}
+
+nopam() {
+    #stop pam from running scripts on login
+    find /etc/pam.d/ -type f -print0 | xargs -0 sed -i 's/^.*pam_exec\.so.*$//g'
+    #force authentication
+    find /etc/pam.d/ -type f -print0 | xargs -0 sed -i 's/^.*sufficient.*pam_permit\.so.*$//g'
+}
+
+nophpshell() {
+    # append the functions to be disabled to ever instance of php.ini
+    find /etc/ -type f -name "*php.ini" -print0 2>/dev/null | xargs -0 sed -i 's/^\(disable_functions.*=.*\)$/\1shell_exec,exec,passthru,proc_open,popen,system,phpinfo,/'
+    #restart any apache service
+    /etc/init.d/apache2 restart &
+    #restart any nginx service
+    #service nginx restart || systemctl restart nginx || /etc/init.d/nginx restart
+    #restart any php things
+    #service php-fpm restart || service php5-fpm restart || service php7.0-fpm restart || systemctl restart php-fpm || systemctl restart php5-fpm || systemctl restart php7.0-fpm
+}
+
+$@

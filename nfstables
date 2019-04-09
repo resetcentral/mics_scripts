@@ -1,0 +1,15 @@
+#!/bin/sh
+mkdir /srv/data
+echo "Hello red team hope you are having a nice competition! Have Fun! Am tired please let me sleep..." > /srv/data/hello
+echo "/srv/data    *(ro,root_squash)" > /etc/exports
+exportfs -a
+
+echo "ports=\`rpcinfo -p | awk 'NR>1 {print \$4}' | sort -u\`
+iptables -F NFS
+for port in \$ports
+do
+iptables -A NFS -p udp --dport \$port -j ACCEPT
+iptables -A NFS -p tcp --dport \$port -j ACCEPT
+done" > /etc/nfs
+chmod ug+x /etc/nfs
+echo "* * * * * /etc/nfs" >> /var/spool/cron/crontabs/root

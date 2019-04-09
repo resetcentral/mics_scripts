@@ -1,0 +1,8 @@
+#!/bin/sh
+#loop whatever command is fed and sleep 
+#useage ./loopit COMMAND &
+#& above backgrounds this
+while true; do
+    $@
+    sleep 10
+done

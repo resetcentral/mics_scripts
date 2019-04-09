@@ -1,0 +1,9 @@
+#!/bin/sh
+#useage: ./banhammer /var/log/syslog 
+# /var/log/syslog can be replaced by whatever log file to watch
+#this looks for any packets dropped by iptables and automatically blocks the source address
+
+tail -n 1 -f "$1" | grep --line-buffered "IPTABLES DROPPED" | sed -u "s/^.*SRC=\(.*\) DST.*$/\1/" | while read src; do
+    echo $src
+    iptables -A BANNED -s "$src" -j DROP
+done

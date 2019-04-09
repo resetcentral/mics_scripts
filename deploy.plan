@@ -1,0 +1,6 @@
+
+1. Run iptables
+2. Run lockdown
+3. Run no_pam
+4. Run log-modtime
+5. 

@@ -1,0 +1,6 @@
+#!/bin/bash
+source venv/bin/activate
+
+export PATH=$PATH:./venv/bin/
+sh deploy-server.sh &
+fab linux_initial 2> fab.err | grep -v task > fab.log

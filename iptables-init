@@ -1,0 +1,43 @@
+#!/bin/sh
+
+#internal="$1"
+
+# Clear current ruleset
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -F
+iptables -X
+
+# Loopback
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+
+# Banned IPs chain
+#iptables -N BANNED
+#iptables -A INPUT -j BANNED
+
+iptables -N NFS
+iptables -A INPUT -j NFS
+
+# State
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# SSH Management
+#iptables -A INPUT -p tcp --dport 22 -s "$internal" -j ACCEPT
+
+# Out to local network
+#iptables -A OUTPUT -d "$internal" -j ACCEPT
+
+# Allow in common ports
+iptables -A INPUT -p tcp -m multiport --dports 21,80,443,2049,111,5432,25,5900,22 -j ACCEPT
+iptables -A INPUT -p udp -m multiport --dports 2049,111 -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 20 -j ACCEPT
+
+# Enable logging
+#iptables -A INPUT ! -s "$internal" -j LOG --log-prefix "IPTABLES DROPPED: " --log-level 6 -m limit --limit 1/s
+
+# Drop policy
+iptables -P INPUT DROP
+iptables -P OUTPUT DROP
+iptables -P FORWARD DROP

@@ -1,0 +1,40 @@
+#!/bin/sh
+# Install mcrypt
+dpkg -i deb_files/libltdl3_1.5.26-1ubuntu1_i386.deb
+dpkg -i deb_files/libmcrypt4_2.5.7-5_i386.deb
+dpkg -i deb_files/php5-mcrypt_5.2.3-0ubuntu1_i386.deb
+dpkg -i deb_files/php5-cli.deb
+dpkg -i deb_files/php5-cgi.deb
+dpkg -i deb_files/php5-mysql.deb
+dpkg -i deb_files/php5-gd.deb
+dpkg -i deb_files/php5-common.deb
+dpkg -i deb_files/libapache2-mod-php5.deb
+dpkg -i deb_files/php5.deb
+dpkg -i deb_files/apache2.2-common_2.2.8-1ubuntu0.25_i386.deb
+dpkg -i deb_files/apache2-mpm-prefork.deb
+dpkg -i deb_files/apache2-mpm-event.deb
+dpkg -i deb_files/apache2-mpm-worker_2.2.8-1ubuntu0.25_i386.deb
+dpkg -i deb_files/apache2_2.2.8-1ubuntu0.25_all.deb
+dpkg -i deb_files/postfix_2.5.1-2ubuntu1.4_i386.deb
+
+sed -i '/anonymous_enable/d' /etc/vsftpd.conf
+/etc/init.d/xinetd restart &
+/etc/init.d/apache2 restart &
+/etc/init.d/postfix restart &
+
+# Fix vnc
+echo "sorryteam" | vncpasswd -f > /root/.vnc/passwd
+
+# Get rid of stuff
+mkdir /root/.bad/
+mv /var/www/dav /root/.bad/
+mv /var/www/mutillidae /root/.bad/
+mv /var/www/t* /root/.bad/
+
+# Fix dvwa
+mysql -u root -e "UPDATE dvwa.users SET password=MD5('sorryteam')"
+
+# Fix mysql?
+mysql -u root -e "UPDATE mysql.user SET password=Password('sorryteam'); FLUSH PRIVILEGES"
+sed  -i "s/\(db_password.*\)=.*/\1='sorryteam\';/" /var/www/dvwa/config/config.inc.php
+history -c

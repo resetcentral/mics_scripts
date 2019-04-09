@@ -1,0 +1,38 @@
+#!/bin/sh
+#LOCAL_NET="192.168.1.0/24"
+ROOTPASS="sorryteam"
+PASS="sorryteam"
+
+echo "CHANGING ROOT PASS"
+sh linux-init changerootpass "$ROOTPASS"
+echo "CHANGING USER PASSES"
+sh linux-init changepass "$PASS"
+echo "CREATING DSU USER"
+sh linux-init createuser dsu "$ROOTPASS"
+echo "FIXING PROFILES"
+sh linux-init fixprofile
+
+echo "DOING IPTABLES"
+sh iptables-init #"$LOCAL_NET"
+echo "CHECKING PERSISTENCE"
+sh linux-init printpersistence > pers.txt
+echo "FIXING PHP SHELL"
+sh linux-init nophpshell
+echo "NO PAM STUFF"
+sh linux-init nopam
+
+echo "FIX SOME METASPLOIT STUFF"
+sh metafix
+#echo "SECURING NFS"
+#sh nfstables
+echo "SECURING POSTGRESQL"
+sh sec-postgres
+
+echo "FIXING SUDOERS"
+sh linux-init fixsudoers root dsu
+
+history -c
+
+echo "FIXING SSHD"
+sh linux-init fixsshd
+#sh linux-init killconn

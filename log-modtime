@@ -1,0 +1,6 @@
+#!/bin/sh
+
+find / -mmin -2 -type f -not -path "/proc/*" \
+                        -not -path "/sys/*" \
+                        -not -path "/run/*" \
+                        -not -path "/var/log/*" 2>/dev/null
